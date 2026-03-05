@@ -2,58 +2,127 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Bílina BMX Racing – DUST & CRASH</title>
+    <title>Bílina BMX Racing – SPEEDO EDITION</title>
     <style>
-        body { background-color: #111; margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        canvas { display: block; }
-        #ui, #timer, #win-screen, #start-screen, #crash-msg { position: absolute; color: white; border-radius: 12px; pointer-events: none; }
-        #ui { top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #444; z-index: 50; }
-        #timer { top: 10px; right: 10px; text-align: right; background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #444; z-index: 50; }
-        #start-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 200; pointer-events: auto; }
-        #logo-img { max-width: 80%; max-height: 60%; margin-bottom: 30px; }
-        .blink { animation: blinker 1.5s linear infinite; font-size: 20px; color: #ffca28; font-weight: bold; }
-        @keyframes blinker { 50% { opacity: 0; } }
-        #win-screen { display: none; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 320px; text-align: center; pointer-events: auto; background: rgba(0,0,0,0.95); padding: 30px; border: 3px solid #ffca28; z-index: 150; }
-        
-        /* UPRAVENÉ OKNO PÁDU */
-        #crash-msg { 
-            display: none; top: 75%; left: 50%; transform: translate(-50%, -50%); 
-            background: rgba(20, 0, 0, 0.95); padding: 25px; border-radius: 15px; border: 4px solid #ff4444; 
-            text-align: center; z-index: 300; min-width: 400px; box-shadow: 0 0 50px rgba(255, 0, 0, 0.4);
+        body { 
+            background-color: #000; margin: 0; display: flex; align-items: center; 
+            justify-content: center; height: 100vh; overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
-        .rozsekal-ses { 
-            color: #ff0000; font-size: 48px; font-weight: 900; margin-bottom: 10px; 
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.5); animation: pulse 1s infinite;
+
+        #game-container {
+            position: relative; width: 95vw; max-width: 1200px; 
+            aspect-ratio: 16 / 13; background: #000; overflow: hidden;
+            border: 3px solid #333; box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            display: flex;
         }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        #canvas-wrapper {
+            position: relative; flex-grow: 1; height: 100%; overflow: hidden; background: #111;
+        }
+        canvas { width: 100%; height: 100%; display: block; }
         
-        .key { background: #fff; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-        #timeDisplay { font-size: 32px; font-weight: bold; color: #0f0; }
+        #right-panel { 
+            width: 260px; height: 100%; background: #1a1a1a; border-left: 3px solid #333;
+            display: flex; flex-direction: column; gap: 15px; padding: 20px; box-sizing: border-box; z-index: 50;
+        }
+
+        .ui-box { background: #252525; padding: 15px; border: 1px solid #444; border-radius: 12px; color: white; }
+        #timer-box { text-align: center; border-color: #0f0; }
+        #timeDisplay { font-size: 38px; font-weight: bold; color: #0f0; display: block; }
+        #recordDisplay { font-size: 12px; opacity: 0.7; margin-top: 5px; color: #ffca28; }
+        
+        /* RYCHLOMĚR STYLE */
+        #speed-box { text-align: center; border-color: #00e5ff; }
+        #speedDisplay { font-size: 32px; font-weight: bold; color: #00e5ff; display: block; }
+        .unit { font-size: 14px; color: #aaa; }
+
+        #history-box { font-size: 13px; flex-grow: 1; overflow-y: auto; }
+        #history-box h3 { margin: 0 0 10px 0; font-size: 14px; color: #ffca28; text-transform: uppercase; }
+        #historyList { list-style: none; padding: 0; margin: 0; }
+        #historyList li { border-bottom: 1px solid #333; padding: 5px 0; display: flex; justify-content: space-between; font-size: 11px; }
+
+        #controls-box { font-size: 12px; line-height: 1.6; background: #333; }
+        #controls-box b { color: #ffca28; }
+        
+        #start-screen, #win-screen, #crash-msg { 
+            position: absolute; z-index: 100; text-align: center; color: white; 
+            width: 100%; height: 100%; top:0; left:0; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+        }
+        
+        #start-screen { background: rgba(0,0,0,0.95); pointer-events: auto; }
+        #name-input { 
+            padding: 10px; font-size: 18px; border-radius: 8px; border: 2px solid #ffca28; 
+            background: #222; color: white; margin: 15px 0; text-align: center; width: 200px;
+        }
+        .btn-start { background: #ffca28; color: #000; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; }
+
+        #win-screen { display: none; background: rgba(0,0,0,0.9); pointer-events: auto; }
+        #crash-msg { display: none; background: rgba(40, 0, 0, 0.8); pointer-events: auto; }
+        .rozsekal-ses { color: #ff0000; font-size: 40px; font-weight: 900; animation: pulse 0.8s infinite; }
+        
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .key { background: #fff; color: #000; padding: 2px 5px; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="start-screen" onclick="startHry()">
-    <img id="logo-img" src="logo_2.png" alt="Bílina BMX Logo">
-    <div class="blink">STISKNI LIBOVOLNOU KLÁVESU PRO START</div>
+<div id="game-container">
+    <div id="canvas-wrapper">
+        <div id="start-screen">
+            <img id="logo-img" src="logo_2.png" alt="Bílina BMX Logo" style="max-width: 60%; margin-bottom: 10px;">
+            <div style="color: #ffca28; font-weight: bold;">ZADEJ JMÉNO JEZDCE:</div>
+            <input type="text" id="name-input" placeholder="Tvé jméno..." maxlength="12">
+            <button class="btn-start" onclick="startHry()">START ZÁVODU</button>
+        </div>
+
+        <div id="crash-msg">
+            <div class="rozsekal-ses">ROZSEKAL SES !!!</div>
+            <p>Stiskni <span class="key">R</span> pro návrat</p>
+        </div>
+
+        <div id="win-screen">
+            <div style="font-size: 60px;">🏆</div>
+            <h1 style="color: #ffca28; margin: 10px 0;">CÍL PROJET!</h1>
+            <div id="finalTimeVal" style="font-size: 28px; margin-bottom: 20px;">00:00</div>
+            <button class="btn-start" onclick="resetZavodu()">JET ZNOVU (R)</button>
+        </div>
+
+        <canvas id="herniPlatno"></canvas>
+    </div>
+
+    <div id="right-panel">
+        <div id="timer-box" class="ui-box">
+            <span id="timeDisplay">00:00</span>
+            <div id="recordDisplay">REKORD: --:--</div>
+        </div>
+
+        <div id="speed-box" class="ui-box">
+            <span id="speedDisplay">0</span>
+            <span class="unit">km/h</span>
+        </div>
+
+        <div id="history-box" class="ui-box">
+            <h3>Historie výsledků</h3>
+            <ul id="historyList"></ul>
+        </div>
+
+        <div id="controls-box" class="ui-box">
+            <div><b>JEZDEC:</b> <span id="display-name" style="color:#fff">---</span></div>
+            <div><b>ŠLAPEJ:</b> <span class="key">SPACE</span></div>
+            <div><b>ZATÁČEJ:</b> <span class="key">←</span> <span class="key">→</span></div>
+            <div><b>RESET:</b> <span class="key">R</span></div>
+        </div>
+    </div>
 </div>
-
-<div id="ui">ŠLAPEJ: <span class="key">MEZERNÍK</span> | ZATÁČEJ: <span class="key">← →</span> | RESET: <span class="key">R</span></div>
-<div id="timer">ČAS: <span id="timeDisplay">00:00</span><div id="recordDisplay" style="font-size: 14px; opacity: 0.6;">REKORD: --:--</div></div>
-
-<div id="crash-msg">
-    <div class="rozsekal-ses">ROZSEKAL SES !!!</div>
-    <p style="font-size: 18px; margin: 10px 0;">VYJEL JSI MIMO TRAŤ.</p>
-    <p>Pro návrat na start stiskni <span class="key">R</span></p>
-</div>
-
-<div id="win-screen"><h1>🏆 CÍL PROJET!</h1><div id="finalTimeVal">00:00</div><div id="newRecordMsg" style="color: #0f0; display: none;">✨ NOVÝ REKORD! ✨</div><button onclick="resetZavodu()">JET ZNOVU (R)</button></div>
-
-<canvas id="herniPlatno"></canvas>
 
 <script>
     const canvas = document.getElementById('herniPlatno'), ctx = canvas.getContext('2d');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
     const timeDisplay = document.getElementById('timeDisplay'), recordDisplay = document.getElementById('recordDisplay');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const historyList = document.getElementById('historyList'), nameInput = document.getElementById('name-input');
     const crashMsg = document.getElementById('crash-msg'), winScreen = document.getElementById('win-screen'), startScreen = document.getElementById('start-screen');
     
     let mapaReady = false;
@@ -62,59 +131,32 @@
     const imgJezdec2 = new Image(); imgJezdec2.src = 'jezdec_2.png';
 
     const START_X = 77, START_Y = 168;
-    let hrac = { x: START_X, y: START_Y, rychlost: 0, uhel: 1.4, maxRychlost: 7.5, silaSlapnuti: 0.45, zakladniRotace: 0.055, treni: 0.988, spadl: false, vyral: false, beziStopky: false, hraBezi: false, casStartu: 0 };
+    const CIL_BOX = { x: 460, y: 220, w: 100, h: 80 }; 
 
-    let prach = [];
-    let aktualniTrasa = [], nejlepsiTrasa = [], intervalZaznamu = null;
+    let hrac = { 
+        x: START_X, y: START_Y, rychlost: 0, uhel: 1.4, maxRychlost: 7.5, silaSlapnuti: 0.45, 
+        zakladniRotace: 0.055, treni: 0.988, spadl: false, vyral: false, beziStopky: false, 
+        hraBezi: false, casStartu: 0, jmeno: "" 
+    };
+
+    let prach = [], aktualniTrasa = [], nejlepsiTrasa = [], historieCasu = [], klavesy = {};
 
     try {
         const d = localStorage.getItem('bmx_ghost_data');
         if (d) nejlepsiTrasa = JSON.parse(d);
+        const bc = localStorage.getItem('bmx_rekord_val'), bn = localStorage.getItem('bmx_rekord_name');
+        if (bc) recordDisplay.innerText = `REKORD: ${format(parseInt(bc))} (${bn})`;
+        const h = localStorage.getItem('bmx_history_list');
+        if (h) { historieCasu = JSON.parse(h); aktualizujHistoriiVizual(); }
     } catch(e) {}
 
-    let nejlepsiCas = localStorage.getItem('bmx_rekord_final');
-    if (nejlepsiCas) recordDisplay.innerText = "REKORD: " + format(parseInt(nejlepsiCas));
-
-    const klavesy = {};
-    function startHry() { if (!hrac.hraBezi) { hrac.hraBezi = true; startScreen.style.display = "none"; } }
-
-    function vytvorPrach(x, y, uhel) {
-        const pocet = 8 + Math.random() * 4;
-        const zadniKoloX = x - Math.cos(uhel) * 30;
-        const zadniKoloY = y - Math.sin(uhel) * 30;
-        for (let i = 0; i < pocet; i++) {
-            prach.push({
-                x: zadniKoloX, y: zadniKoloY,
-                vx: -Math.cos(uhel + (Math.random() - 0.5) * 0.5) * (1 + Math.random() * 2),
-                vy: -Math.sin(uhel + (Math.random() - 0.5) * 0.5) * (1 + Math.random() * 2),
-                zivotnost: 20 + Math.random() * 15,
-                velikost: 2 + Math.random() * 3
-            });
-        }
-    }
-
-    window.addEventListener('keydown', (e) => {
-        if (!hrac.hraBezi) { startHry(); return; }
-        if (e.code === 'KeyR') resetZavodu();
-        if (hrac.spadl || hrac.vyral) return;
-        if (e.code === 'Space') {
-            if (hrac.rychlost < hrac.maxRychlost) hrac.rychlost += hrac.silaSlapnuti;
-            if (hrac.rychlost > 0.5) vytvorPrach(hrac.x, hrac.y, hrac.uhel);
-            if (!hrac.beziStopky && hrac.y > 200) {
-                hrac.casStartu = Date.now(); hrac.beziStopky = true; aktualniTrasa = [];
-                if (intervalZaznamu) clearInterval(intervalZaznamu);
-                intervalZaznamu = setInterval(() => { if(hrac.beziStopky) aktualniTrasa.push({x: hrac.x, y: hrac.y, u: hrac.uhel}); }, 100);
-            }
-        }
-        klavesy[e.code] = true;
-    });
-    window.addEventListener('keyup', (e) => klavesy[e.code] = false);
-
-    function resetZavodu() {
-        hrac.x = START_X; hrac.y = START_Y; hrac.rychlost = 0; hrac.uhel = 1.4; hrac.spadl = false; hrac.vyral = false; hrac.beziStopky = false;
-        aktualniTrasa = []; prach = []; if (intervalZaznamu) clearInterval(intervalZaznamu);
-        crashMsg.style.display = "none"; winScreen.style.display = "none"; document.getElementById('newRecordMsg').style.display = "none";
-        timeDisplay.innerText = "00:00";
+    function startHry() { 
+        let j = nameInput.value.trim();
+        if (j === "") { alert("Zadej prosím jméno jezdce!"); return; }
+        hrac.jmeno = j;
+        document.getElementById('display-name').innerText = j;
+        hrac.hraBezi = true; 
+        startScreen.style.display = "none"; 
     }
 
     function format(ms) {
@@ -122,18 +164,51 @@
         return s.toString().padStart(2, '0') + ":" + m.toString().padStart(2, '0');
     }
 
+    function aktualizujHistoriiVizual() {
+        historyList.innerHTML = historieCasu.slice(0, 10).map(c => 
+            `<li><span>${c.name}</span> <b>${format(c.time)}</b></li>`).join('');
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (!hrac.hraBezi) return;
+        if (e.code === 'KeyR') resetZavodu();
+        if (hrac.spadl || hrac.vyral) return;
+        if (e.code === 'Space') {
+            if (hrac.rychlost < hrac.maxRychlost) hrac.rychlost += hrac.silaSlapnuti;
+            vytvorPrach(hrac.x, hrac.y, hrac.uhel);
+            if (!hrac.beziStopky && hrac.y > 200) {
+                hrac.casStartu = Date.now(); hrac.beziStopky = true;
+                aktualniTrasa = [];
+            }
+        }
+        klavesy[e.code] = true;
+    });
+    window.addEventListener('keyup', (e) => klavesy[e.code] = false);
+
+    function resetZavodu() {
+        hrac.x = START_X; hrac.y = START_Y; hrac.rychlost = 0; hrac.uhel = 1.4; 
+        hrac.spadl = false; hrac.vyral = false; hrac.beziStopky = false; hrac.casStartu = 0;
+        prach = []; aktualniTrasa = [];
+        crashMsg.style.display = "none"; winScreen.style.display = "none"; 
+        timeDisplay.innerText = "00:00"; speedDisplay.innerText = "0";
+    }
+
+    function vytvorPrach(x, y, uhel) {
+        for (let i = 0; i < 4; i++) {
+            prach.push({ x: x - Math.cos(uhel) * 30, y: y - Math.sin(uhel) * 30, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, zivotnost: 25 });
+        }
+    }
+
     function isPointInPoly(pt, poly) {
         let x = pt.x, y = pt.y, inside = false;
         for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
             let xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
-            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
+            if (((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
         }
         return inside;
     }
 
     let polygony = [{"points":[{"x":191,"y":251},{"x":320,"y":544},{"x":376,"y":676},{"x":438,"y":744},{"x":494,"y":780},{"x":582,"y":826},{"x":672,"y":871},{"x":743,"y":911},{"x":754,"y":895},{"x":648,"y":790},{"x":535,"y":663},{"x":408,"y":519},{"x":293,"y":384},{"x":211,"y":266},{"x":194,"y":221},{"x":196,"y":155},{"x":211,"y":125},{"x":231,"y":111},{"x":275,"y":94},{"x":311,"y":87},{"x":356,"y":97},{"x":383,"y":119},{"x":404,"y":149},{"x":429,"y":201},{"x":449,"y":232},{"x":447,"y":173},{"x":432,"y":112},{"x":411,"y":86},{"x":378,"y":65},{"x":353,"y":55},{"x":300,"y":56},{"x":254,"y":61},{"x":210,"y":77},{"x":166,"y":95},{"x":140,"y":109},{"x":158,"y":153},{"x":177,"y":202}]},{"points":[{"x":148,"y":58},{"x":9,"y":125},{"x":262,"y":764},{"x":297,"y":805},{"x":363,"y":856},{"x":463,"y":906},{"x":654,"y":993},{"x":732,"y":1027},{"x":801,"y":1036},{"x":851,"y":1018},{"x":878,"y":990},{"x":894,"y":944},{"x":885,"y":889},{"x":873,"y":878},{"x":910,"y":882},{"x":941,"y":870},{"x":961,"y":852},{"x":986,"y":807},{"x":986,"y":763},{"x":976,"y":723},{"x":953,"y":678},{"x":816,"y":545},{"x":596,"y":265},{"x":802,"y":113},{"x":1007,"y":230},{"x":1049,"y":548},{"x":1048,"y":952},{"x":1032,"y":1049},{"x":856,"y":1096},{"x":517,"y":1089},{"x":303,"y":1026},{"x":51,"y":875},{"x":6,"y":760},{"x":-4,"y":377},{"x":-40,"y":39},{"x":40,"y":45}]},{"points":[{"x":484,"y":292},{"x":870,"y":784},{"x":881,"y":772},{"x":492,"y":284}]},{"points":[{"x":325,"y":221},{"x":751,"y":774},{"x":312,"y":233}]}];
-    const CIL = {x: 480, y: 240, w: 100, h: 80};
 
     function herniSmycka() {
         if (hrac.hraBezi && !hrac.spadl && !hrac.vyral) {
@@ -144,50 +219,86 @@
             hrac.x += Math.cos(hrac.uhel) * hrac.rychlost;
             hrac.y += Math.sin(hrac.uhel) * hrac.rychlost;
 
-            polygony.forEach(poly => { if (isPointInPoly({x: hrac.x, y: hrac.y}, poly.points)) { hrac.spadl = true; hrac.beziStopky = false; crashMsg.style.display = "block"; clearInterval(intervalZaznamu); } });
-            if (hrac.beziStopky && hrac.x > CIL.x && hrac.x < CIL.x + CIL.w && hrac.y > CIL.y && hrac.y < CIL.y + CIL.h) {
-                const konec = Date.now() - hrac.casStartu; hrac.beziStopky = false; hrac.vyral = true; clearInterval(intervalZaznamu);
-                winScreen.style.display = "block"; document.getElementById('finalTimeVal').innerText = "Tvůj čas: " + format(konec);
-                if (!nejlepsiCas || konec < nejlepsiCas) { 
-                    nejlepsiCas = konec; nejlepsiTrasa = [...aktualniTrasa]; 
-                    localStorage.setItem('bmx_rekord_final', konec); localStorage.setItem('bmx_ghost_data', JSON.stringify(nejlepsiTrasa)); 
-                    recordDisplay.innerText = "REKORD: " + format(konec); document.getElementById('newRecordMsg').style.display = "block"; 
+            if (hrac.beziStopky) {
+                aktualniTrasa.push({x: hrac.x, y: hrac.y, u: hrac.uhel});
+                if (hrac.x > CIL_BOX.x && hrac.x < CIL_BOX.x + CIL_BOX.w && 
+                    hrac.y > CIL_BOX.y && hrac.y < CIL_BOX.y + CIL_BOX.h) {
+                    ukonciZavod();
                 }
             }
+
+            polygony.forEach(poly => { if (isPointInPoly({x: hrac.x, y: hrac.y}, poly.points)) { hrac.spadl = true; hrac.beziStopky = false; crashMsg.style.display = "flex"; } });
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         let camX = canvas.width / 2 - hrac.x, camY = canvas.height / 2 - hrac.y;
+        if (mapaReady) {
+            camX = Math.min(0, Math.max(camX, canvas.width - mapa.width));
+            camY = Math.min(0, Math.max(camY, canvas.height - mapa.height));
+        }
+
         ctx.save(); ctx.translate(camX, camY);
         if (mapaReady) ctx.drawImage(mapa, 0, 0);
 
-        ctx.fillStyle = "rgba(160, 120, 80, 0.6)";
-        for (let i = prach.length - 1; i >= 0; i--) {
-            let p = prach[i]; p.x += p.vx; p.y += p.vy; p.zivotnost--;
-            let aktVelikost = p.velikost * (p.zivotnost / 35);
-            if (aktVelikost > 0.1 && p.zivotnost > 0) { ctx.beginPath(); ctx.arc(p.x, p.y, aktVelikost, 0, Math.PI * 2); ctx.fill(); } else { prach.splice(i, 1); }
-        }
-
-        if (hrac.beziStopky && nejlepsiTrasa.length > 0) {
-            let idx = Math.floor((Date.now() - hrac.casStartu) / 100);
-            if (idx < nejlepsiTrasa.length) {
-                let g = nejlepsiTrasa[idx]; ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.u + Math.PI / 2); ctx.globalAlpha = 0.35;
-                if (imgJezdec1.complete) ctx.drawImage(imgJezdec1, -17, -35, 35, 70); ctx.restore();
+        if (nejlepsiTrasa.length > 0 && hrac.beziStopky) {
+            let d = nejlepsiTrasa[aktualniTrasa.length];
+            if (d) {
+                ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.u + Math.PI/2);
+                ctx.globalAlpha = 0.3; ctx.drawImage(imgJezdec1, -17, -35, 35, 70);
+                ctx.restore();
             }
         }
+
+        prach.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.zivotnost--;
+            if (p.zivotnost > 0) {
+                ctx.fillStyle = `rgba(160, 120, 80, ${p.zivotnost/25})`;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
+            } else prach.splice(i, 1);
+        });
+
+        ctx.beginPath(); ctx.ellipse(hrac.x, hrac.y + 5, 15, 8, 0, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.fill();
         ctx.restore();
 
         ctx.save(); ctx.translate(hrac.x + camX, hrac.y + camY);
         if (hrac.spadl) { if (imgJezdec2.complete) ctx.drawImage(imgJezdec2, -70, -70, 140, 140); }
-        else { ctx.rotate(hrac.uhel + Math.PI / 2); if (imgJezdec1.complete) ctx.drawImage(imgJezdec1, -17, -35, 35, 70); }
+        else { 
+            ctx.rotate(hrac.uhel + Math.PI/2);
+            if (imgJezdec1.complete) ctx.drawImage(imgJezdec1, -17, -35, 35, 70); 
+        }
         ctx.restore();
+
+        // AKTUALIZACE RYCHLOMĚRU
+        speedDisplay.innerText = Math.round(hrac.rychlost * 10);
 
         if (hrac.beziStopky) timeDisplay.innerText = format(Date.now() - hrac.casStartu);
         requestAnimationFrame(herniSmycka);
     }
 
-    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    function ukonciZavod() {
+        let konec = Date.now() - hrac.casStartu;
+        hrac.beziStopky = false; hrac.vyral = true;
+        winScreen.style.display = "flex";
+        document.getElementById('finalTimeVal').innerText = "Tvůj čas: " + format(konec);
+        historieCasu.unshift({name: hrac.jmeno, time: konec});
+        localStorage.setItem('bmx_history_list', JSON.stringify(historieCasu));
+        aktualizujHistoriiVizual();
+        let bc = localStorage.getItem('bmx_rekord_val');
+        if (!bc || konec < parseInt(bc)) {
+            localStorage.setItem('bmx_rekord_val', konec);
+            localStorage.setItem('bmx_rekord_name', hrac.jmeno);
+            localStorage.setItem('bmx_ghost_data', JSON.stringify(aktualniTrasa));
+            recordDisplay.innerText = `REKORD: ${format(konec)} (${hrac.jmeno})`;
+            nejlepsiTrasa = [...aktualniTrasa];
+        }
+    }
+
+    function resize() {
+        const rect = canvasWrapper.getBoundingClientRect();
+        canvas.width = rect.width; canvas.height = rect.height;
+    }
+    window.addEventListener('resize', resize); resize();
     herniSmycka();
 </script>
 </body>
